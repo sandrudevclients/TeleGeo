@@ -3,68 +3,57 @@ from streamlit.components.v1 import html
 from streamlit_folium import st_folium
 import folium
 
-# Настройки страницы
-st.set_page_config(page_title="OpenStreetMap с местоположением пользователя", layout="wide")
+st.set_page_config(page_title="OpenStreetMap with User Location", layout="wide")
+st.title("OpenStreetMap с вашим местоположением")
 
-# Заголовок
-st.title("OpenStreetMap с местоположением пользователя")
-
-# HTML/JS для получения координат пользователя через геолокацию
+# HTML/JS для получения координат пользователя
 geolocation_html = """
 <script>
 function getLocation() {
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            const streamlitEvent = new CustomEvent("streamlit:message", {
-                detail: { latitude: latitude, longitude: longitude }
-            });
-            window.dispatchEvent(streamlitEvent);
-        },
-        (error) => {
-            const streamlitEvent = new CustomEvent("streamlit:message", {
-                detail: { latitude: null, longitude: null }
-            });
-            window.dispatchEvent(streamlitEvent);
-        }
-    );
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition);
+    } else {
+        alert("Geolocation is not supported by this browser.");
+    }
 }
+
+function showPosition(position) {
+    const latitude = position.coords.latitude;
+    const longitude = position.coords.longitude;
+    document.getElementById("latitude").textContent = latitude;
+    document.getElementById("longitude").textContent = longitude;
+}
+
+getLocation();
 </script>
+<p>Широта: <span id="latitude"></span></p>
+<p>Долгота: <span id="longitude"></span></p>
 """
 
-# Вставляем JavaScript код в Streamlit
 html(geolocation_html)
 
-# Кнопка для получения местоположения
-if st.button("Получить местоположение"):
-    # Отправляем запрос на получение координат
-    get_location_script = """
-    <script>
-    getLocation();
-    </script>
-    """
-    html(get_location_script)
+# Получаем координаты из HTML-элементов и сохраняем в состояние сессии
+lat = st.session_state.get("latitude")
+lon = st.session_state.get("longitude")
 
-# Получаем координаты из сообщения Streamlit
-if 'latitude' not in st.session_state:
-    st.session_state.latitude = None
-if 'longitude' not in st.session_state:
-    st.session_state.longitude = None
+# Настройки карты
+map_type = st.selectbox("Тип карты", ["OpenStreetMap", "Stamen Terrain", "Stamen Toner"])
+zoom_level = st.slider("Уровень масштабирования", 1, 18, 12)
 
-# Проверяем, есть ли данные о местоположении
-if st.session_state.latitude is not None and st.session_state.longitude is not None:
-    lat = st.session_state.latitude
-    lon = st.session_state.longitude
+def create_map(latitude, longitude, map_type, zoom_level):
+    m = folium.Map(location=[latitude, longitude], zoom_start=zoom_level)
+    folium.TileLayer(tiles=map_type).add_to(m)
+    folium.Marker([latitude, longitude], popup="Ваше местоположение").add_to(m)
+    return m
+
+if st.button("Обновить местоположение"):
+    st.experimental_rerun()
+
+if lat and lon:
     st.write(f"Ваше местоположение: широта {lat}, долгота {lon}")
-
-    # Создание карты с помощью folium
-    m = folium.Map(location=[lat, lon], zoom_start=12)
-
-    # Добавление маркера на карту
-    folium.Marker([lat, lon], popup="Ваше местоположение").add_to(m)
-
-    # Отображение карты в Streamlit
+    st.session_state.latitude = lat
+    st.session_state.longitude = lon
+    m = create_map(lat, lon, map_type, zoom_level)
     st_folium(m, width=725)
 else:
     st.write("Ожидание получения данных о геолокации...")

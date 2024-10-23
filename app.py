@@ -1,39 +1,30 @@
 import streamlit as st
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut
+from streamlit_js_eval import streamlit_js_eval
 from streamlit_folium import st_folium
 import folium
 
-def get_location():
-    try:
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.geocode("Your IP Address")
-        if location:
-            return location.latitude, location.longitude
-    except GeocoderTimedOut:
-        return None
-
 # Настройки страницы
-st.set_page_config(page_title="OpenStreetMap with Location", layout="wide")
+st.set_page_config(page_title="OpenStreetMap with User Location", layout="wide")
 
 # Заголовок
 st.title("OpenStreetMap with User Location")
 
-# Определение местоположения пользователя
-location = get_location()
+# Получение координат пользователя через JavaScript
+coords = streamlit_js_eval(js_expressions="navigator.geolocation.getCurrentPosition(({coords}) => coords)", key="geo_coords")
 
-if location:
-    lat, lon = location
+# Проверка, удалось ли получить координаты
+if coords:
+    lat = coords['latitude']
+    lon = coords['longitude']
     st.write(f"Ваше местоположение: широта {lat}, долгота {lon}")
+
+    # Создание карты с помощью folium
+    m = folium.Map(location=[lat, lon], zoom_start=12)
+
+    # Добавление маркера на карту
+    folium.Marker([lat, lon], popup="Ваше местоположение").add_to(m)
+
+    # Отображение карты в Streamlit
+    st_folium(m, width=725)
 else:
-    lat, lon = 51.5074, -0.1278  # Лондон как пример по умолчанию
-    st.write("Не удалось определить местоположение, показано местоположение по умолчанию (Лондон)")
-
-# Создание карты с помощью folium
-m = folium.Map(location=[lat, lon], zoom_start=12)
-
-# Добавление маркера на карту
-folium.Marker([lat, lon], popup="Ваше местоположение").add_to(m)
-
-# Отображение карты в Streamlit
-st_folium(m, width=725)
+    st.write("Ожидание разрешения на доступ к геолокации...")

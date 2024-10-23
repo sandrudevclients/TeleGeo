@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit.components.v1 import html
 from streamlit_folium import st_folium
 import folium
 
@@ -9,44 +8,41 @@ st.set_page_config(page_title="OpenStreetMap with User Location", layout="wide")
 # Заголовок
 st.title("OpenStreetMap with User Location")
 
-# HTML/JS для получения координат пользователя через геолокацию и их сохранения в Streamlit
-geolocation_html = """
+# JavaScript для получения координат
+st.markdown("""
 <script>
-function getLocation() {
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            // Отправляем координаты в Streamlit
-            document.getElementById("latitude").value = latitude;
-            document.getElementById("longitude").value = longitude;
-            document.getElementById("sendCoords").click();
-        }
-    );
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        // Отправляем данные в Streamlit
+        const data = {latitude: latitude, longitude: longitude};
+        window.parent.postMessage(data, "*");
+    });
+} else {
+    alert("Геолокация не поддерживается вашим браузером.");
 }
-getLocation();
 </script>
-<input type="hidden" id="latitude" name="latitude" value="">
-<input type="hidden" id="longitude" name="longitude" value="">
-<button id="sendCoords" onclick="sendCoords()" style="display:none;">Send</button>
-"""
+""", unsafe_allow_html=True)
 
-# Вставляем JavaScript код в Streamlit
-html(geolocation_html, unsafe_allow_html=True)
+# Функция для получения координат из JavaScript
+def get_coords():
+    coords = st.experimental_get_query_params()
+    return coords.get("latitude", [None])[0], coords.get("longitude", [None])[0]
 
-# Получаем координаты из скрытых полей через Streamlit
-lat = st.text_input("Широта", key="latitude")
-lon = st.text_input("Долгота", key="longitude")
+# Отображение координат на карте
+latitude, longitude = get_coords()
 
-# Проверка наличия координат
-if lat and lon:
-    st.write(f"Ваше местоположение: широта {lat}, долгота {lon}")
+if latitude and longitude:
+    latitude = float(latitude)
+    longitude = float(longitude)
     
+    st.write(f"Ваше местоположение: широта {latitude}, долгота {longitude}")
+
     # Создание карты с помощью folium
-    m = folium.Map(location=[float(lat), float(lon)], zoom_start=12)
-    
-    # Добавление маркера на карту
-    folium.Marker([float(lat), float(lon)], popup="Ваше местоположение").add_to(m)
+    m = folium.Map(location=[latitude, longitude], zoom_start=12)
+    folium.Marker([latitude, longitude], popup="Ваше местоположение").add_to(m)
     
     # Отображение карты в Streamlit
     st_folium(m, width=725)

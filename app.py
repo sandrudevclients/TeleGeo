@@ -10,10 +10,13 @@ st.set_page_config(page_title="OpenStreetMap with User Location", layout="wide")
 st.title("OpenStreetMap with User Location")
 
 # Запрос координат пользователя через JavaScript
-coords = streamlit_js_eval(js_expressions=["navigator.geolocation.getCurrentPosition((position) => {return position.coords;})"], key="geo_coords")
+coords = streamlit_js_eval(js_expressions="navigator.geolocation.getCurrentPosition(({coords}) => coords)", key="geo_coords")
+
+# Выведем данные для отладки
+st.write("Полученные данные:", coords)
 
 # Проверка, удалось ли получить координаты
-if coords:
+if coords and 'latitude' in coords and 'longitude' in coords:
     lat = coords['latitude']
     lon = coords['longitude']
     st.write(f"Ваше местоположение: широта {lat}, долгота {lon}")
@@ -27,4 +30,4 @@ if coords:
     # Отображение карты в Streamlit
     st_folium(m, width=725)
 else:
-    st.write("Ожидание разрешения на доступ к геолокации...")
+    st.write("Ожидание разрешения на доступ к геолокации или получение данных...")

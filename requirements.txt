@@ -1,3 +1,4 @@
 Streamlit 
 geopy
 streamlit-folium
+streamlit_js_eval

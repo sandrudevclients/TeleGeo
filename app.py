@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_js_eval import streamlit_js_eval
+from streamlit.components.v1 import html
 from streamlit_folium import st_folium
 import folium
 
@@ -9,16 +9,33 @@ st.set_page_config(page_title="OpenStreetMap with User Location", layout="wide")
 # Заголовок
 st.title("OpenStreetMap with User Location")
 
-# Запрос координат пользователя через JavaScript
-coords = streamlit_js_eval(js_expressions="navigator.geolocation.getCurrentPosition(({coords}) => coords)", key="geo_coords")
+# HTML/JS для получения координат пользователя через геолокацию
+geolocation_html = """
+<script>
+function getLocation() {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            document.getElementById("latitude").textContent = latitude;
+            document.getElementById("longitude").textContent = longitude;
+        }
+    );
+}
+getLocation();
+</script>
+<p>Широта: <span id="latitude"></span></p>
+<p>Долгота: <span id="longitude"></span></p>
+"""
 
-# Выведем данные для отладки
-st.write("Полученные данные:", coords)
+# Вставляем JavaScript код в Streamlit
+html(geolocation_html)
 
-# Проверка, удалось ли получить координаты
-if coords and 'latitude' in coords and 'longitude' in coords:
-    lat = coords['latitude']
-    lon = coords['longitude']
+# Получаем координаты из HTML-элементов
+lat = st.session_state.get("latitude")
+lon = st.session_state.get("longitude")
+
+if lat and lon:
     st.write(f"Ваше местоположение: широта {lat}, долгота {lon}")
 
     # Создание карты с помощью folium
@@ -30,4 +47,4 @@ if coords and 'latitude' in coords and 'longitude' in coords:
     # Отображение карты в Streamlit
     st_folium(m, width=725)
 else:
-    st.write("Ожидание разрешения на доступ к геолокации или получение данных...")
+    st.write("Ожидание получения данных о геолокации...")

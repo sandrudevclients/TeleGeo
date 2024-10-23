@@ -9,8 +9,8 @@ st.set_page_config(page_title="OpenStreetMap with User Location", layout="wide")
 # Заголовок
 st.title("OpenStreetMap with User Location")
 
-# Получение координат пользователя через JavaScript
-coords = streamlit_js_eval(js_expressions="navigator.geolocation.getCurrentPosition(({coords}) => coords)", key="geo_coords")
+# Запрос координат пользователя через JavaScript
+coords = streamlit_js_eval(js_expressions=["navigator.geolocation.getCurrentPosition((position) => {return position.coords;})"], key="geo_coords")
 
 # Проверка, удалось ли получить координаты
 if coords:

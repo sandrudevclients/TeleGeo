@@ -1,0 +1,10 @@
+{
+  "manifest": {
+    "name": "test",
+    "short_name": "test",
+    "url": "https://example.com",  // Замените на реальный URL вашего приложения
+    "description": "Это тестовый кошелек.",
+    "start_url": "https://example.com",  // Замените на реальный URL вашего приложения
+    "display": "standalone"
+  }
+}
